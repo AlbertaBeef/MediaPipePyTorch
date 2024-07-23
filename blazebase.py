@@ -119,14 +119,26 @@ class BlazeBlock(nn.Module):
         else:
             h = x
 
+        #if self.skip_proj is not None:
+        #    x = self.skip_proj(x)
+        #elif self.channel_pad > 0:
+        #    x = F.pad(x, (0, 0, 0, 0, 0, self.channel_pad), "constant", 0)
+        #
+        #return self.act(self.convs(h) + x)
+
         if self.skip_proj is not None:
             x = self.skip_proj(x)
+            x = self.act(self.convs(h) + x)
         elif self.channel_pad > 0:
-            x = F.pad(x, (0, 0, 0, 0, 0, self.channel_pad), "constant", 0)
-        
+            c = self.convs(h)
+            s1,s2 = torch.split(c,self.channel_pad,dim=1)
+            s1x = s1+x
+            x = torch.cat((s1x,s2),dim=1)
+            x = self.act(x)
+        else:
+            x = self.act(self.convs(h) + x)
 
-        return self.act(self.convs(h) + x)
-
+        return x
 
 class FinalBlazeBlock(nn.Module):
     def __init__(self, channels, kernel_size=3):
