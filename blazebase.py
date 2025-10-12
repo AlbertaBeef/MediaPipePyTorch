@@ -79,6 +79,9 @@ class BlazeBlock(nn.Module):
         self.stride = stride
         self.kernel_size = kernel_size
         self.channel_pad = out_channels - in_channels
+        if self.channel_pad > 0:
+            #print(f"[BlazeBlock] in_channels={in_channels}, out_channels={out_channels}, channel_pad={self.channel_pad}")
+            self.split_sections = [in_channels,self.channel_pad]
 
         # TFLite uses slightly different padding than PyTorch 
         # on the depthwise conv layer when the stride is 2.
@@ -110,6 +113,7 @@ class BlazeBlock(nn.Module):
             raise NotImplementedError("unknown activation %s"%act)
 
     def forward(self, x):
+        #x_in = x
         if self.stride == 2:
             if self.kernel_size==3:
                 h = F.pad(x, (0, 2, 0, 2), "constant", 0)
@@ -130,8 +134,12 @@ class BlazeBlock(nn.Module):
             x = self.skip_proj(x)
             x = self.act(self.convs(h) + x)
         elif self.channel_pad > 0:
+            #print(f"[BlazeBlock]")
+            #print(f"[BlazeBlock] x_in.shape={x_in.shape}, h.shape={h.shape}, x.shape={x.shape}")
             c = self.convs(h)
-            s1,s2 = torch.split(c,self.channel_pad,dim=1)
+            #print(f"[BlazeBlock] channel_pad={self.channel_pad}, split_sections={self.split_sections}")
+            s1,s2 = torch.split(c,self.split_sections,dim=1)
+            #print(f"[BlazeBlock] x.shape={x.shape}, c.shape={c.shape}, s1.shape={s1.shape}, s2.shape={s2.shape}")
             s1x = s1+x
             x = torch.cat((s1x,s2),dim=1)
             x = self.act(x)
