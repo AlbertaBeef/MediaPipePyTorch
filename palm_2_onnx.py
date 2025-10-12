@@ -73,16 +73,18 @@ for image_id in range(image_cnt):
     input_tensor = torch.from_numpy(img1).permute((2, 0, 1)).unsqueeze(0)
     input_tensor = input_tensor.float() / 255.
 
-    torch.onnx.export(palm_detector,               # model to export
-                  input_tensor,         # model input (or a tuple for multiple inputs)
-                  "BlazePalm.onnx",    # where to save the model (can be a file or file-like object)
-                  export_params=True,  # store the trained parameter weights inside the model file
-                  opset_version=12,    # the ONNX version to export the model to
-                  do_constant_folding=True,  # whether to execute constant folding for optimization
-                  input_names = ['input'],   # the model's input names
-                  output_names = ['output'], # the model's output names
-                  dynamic_axes={'input' : {0 : 'batch_size'},    # variable length axes
-                                'output' : {0 : 'batch_size'}})
+    torch.onnx.export(
+        palm_detector,               # model to export
+        input_tensor,                # model input (or a tuple for multiple inputs)
+        "BlazePalm.onnx",            # where to save the model (can be a file or file-like object)
+        export_params=True,          # store the trained parameter weights inside the model file
+        opset_version=12,            # the ONNX version to export the model to
+        do_constant_folding=True,    # whether to execute constant folding for optimization
+        # INFO - Model inputs: ['input_1']
+        # INFO - Model outputs: ['regressors/concat', 'classificators/concat']                  
+        input_names = ['x'],         # the model's input names
+        output_names = ['r','c']     # the model's output names
+        )
 
     break
     
